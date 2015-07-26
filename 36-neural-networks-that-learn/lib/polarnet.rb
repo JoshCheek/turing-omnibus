@@ -28,6 +28,12 @@ module Polarnet
     [x*radius, y*radius]
   end
 
+  def to_cartesian(radius, radians)
+    [ radius * Math.cos(radians),
+      radius * Math.sin(radians),
+    ]
+  end
+
 end
 
 __END__

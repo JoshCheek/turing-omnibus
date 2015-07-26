@@ -87,20 +87,28 @@ RSpec.describe Polarnet do
 
 
   describe 'to_cartesian' do
-    it 'returns the x, y pair for the radius/angle (in radians)' do
-      sqrt2 = Math.sqrt 2
-      expect(Polarnet.to_cartesian 1, 0.00*pi).to eq [      1,      0 ]
-      expect(Polarnet.to_cartesian 1, 0.25*pi).to eq [  sqrt2,  sqrt2 ]
-      expect(Polarnet.to_cartesian 1, 0.50*pi).to eq [      0,      1 ]
-      expect(Polarnet.to_cartesian 1, 0.75*pi).to eq [ -sqrt2,  sqrt2 ]
-      expect(Polarnet.to_cartesian 1, 1.00*pi).to eq [     -1,      0 ]
-      expect(Polarnet.to_cartesian 1, 1.25*pi).to eq [ -sqrt2, -sqrt2 ]
-      expect(Polarnet.to_cartesian 1, 1.50*pi).to eq [      0,     -1 ]
-      expect(Polarnet.to_cartesian 1, 1.75*pi).to eq [  sqrt2, -sqrt2 ]
-      expect(Polarnet.to_cartesian 1, 2.00*pi).to eq [      1,      0 ]
+    def converts!(radius, radians, to:)
+      expected_x, expected_y = to
+      actual_x,   actual_y   = Polarnet.to_cartesian radius, radians
+      expect(actual_x).to be_within(0.001).of(expected_x)
+      expect(actual_y).to be_within(0.001).of(expected_y)
+    end
 
-      expect(Polarnet.to_cartesian 2, 0.00*pi).to eq [ 2, 0 ]
-      expect(Polarnet.to_cartesian 3, 0.50*pi).to eq [ 0, 3 ]
+    it 'returns the x, y pair for the radius/angle (in radians)' do
+      quarter = 1 / Math.sqrt(2)
+
+      converts! 1, pi*0.00, to: [        1,        0 ]
+      converts! 1, pi*0.25, to: [  quarter,  quarter ]
+      converts! 1, pi*0.50, to: [        0,        1 ]
+      converts! 1, pi*0.75, to: [ -quarter,  quarter ]
+      converts! 1, pi*1.00, to: [       -1,        0 ]
+      converts! 1, pi*1.25, to: [ -quarter, -quarter ]
+      converts! 1, pi*1.50, to: [        0,       -1 ]
+      converts! 1, pi*1.75, to: [  quarter, -quarter ]
+      converts! 1, pi*2.00, to: [        1,        0 ]
+
+      converts! 2, pi*0.00, to: [        2,        0 ]
+      converts! 3, pi*0.50, to: [        0,        3 ]
     end
   end
 
