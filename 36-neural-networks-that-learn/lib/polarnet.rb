@@ -16,7 +16,7 @@ module Polarnet
   end
 
   def generate_training_data(size)
-    # size.times.map { rand 2 }
+    size.times.map { (2*rand) - 1 }
   end
 
 end
