@@ -122,16 +122,82 @@ I've tried to understand neural networks several times,
 and never walked away feeling like I understood it well enough to implement it.
 Well, here I succeeded at implementing it!
 
-* It was confusing how they used an example partway through that was different from the one they were describing.
-  Not saying they need to take it out, but it would have been nice if it were better delimited.
-* It was completely unclear how to map the cartesian coordinates to the inputs / polar coordinates to the outputs.
-  In the end, I did it by translating the x/y to fall within the unit circle, by dividing them by the distance from the origin
+* It was confusing how they used an example partway through that was different from the one
+  they were describing. Not saying they need to take it out, but it would have been nice if it were better delimited.
+* It was completely unclear how to map the cartesian coordinates to the inputs / polar
+  coordinates to the outputs. In the end, I did it by translating the x/y to fall within the
+  unit circle, by dividing them by the distance from the origin
   ...still haven't figured out what I'm going to do w/ the outputs yet
-* The psuedocode is completely procedural, and uses undefined ideas / names, making it very difficult to make sense of
-* The pseudocode for back propagation has a lot of comments, because the pseudocode itself is unreadable
-* I'm pretty sure there is an error in the pseudocode for coordinate conversion, where it says `for j <- 1 to 3`,
-  I can't think of any reason we would have a 3 here, it's probably supposed to be a 2, for the two input neurons.
-* The equation for hyperbolic tangent was wrong on 243, the denominator should be `e^x + e^(-x)`, the book had a minus
+* The psuedocode is completely procedural, and uses undefined ideas / names,
+  making it very difficult to make sense of
+* The pseudocode for back propagation has a lot of comments,
+  because the pseudocode itself is unreadable
+* I'm pretty sure there is an error in the pseudocode for coordinate conversion,
+  where it says `for j <- 1 to 3`, I can't think of any reason we would have a 3 here,
+  it's probably supposed to be a 2, for the two input neurons.
+* The equation for hyperbolic tangent was wrong on 243,
+  the denominator should be `e^x + e^(-x)`, the book had a minus
 * I find it very hard to read `synone` and `syntwo`, and map that to anything meaningful.
-* I wish they would have provided sample inputs / outputs, that would have gone a really long way to making this easier to figure out.
-* I wish they would have provided sample weights, so that I could test that my code worked by running it against those weights before trying to use it to generate my own.
+* I wish they would have provided sample inputs / outputs,
+  that would have gone a really long way to making this easier to figure out.
+* I wish they would have provided sample weights, so that I could test that my code worked
+  by running it against those weights before trying to use it to generate my own.
+* Okay, the algorithm halfway through uses 2 medial layers of 15 each, but then on page 247,
+  they saiy we are "free to change the number of input neurons(3), output neurons (2), or
+  medial neurons (n) to any number" ...I only have 1 input neuron,
+  b/c the angle is the only thing that matters (or is there some way we're supposed to deal
+  with the radius, which can be infinitely large?), and the psuedocode on 247 doesn't ever
+  have `1 to 3`, so what the fuck?
+* They never actually explain how to calculate the error.
+  I swear I've read this chapter 10x now, it's not in there.
+  I think it's supposed to be:
+
+  > For each medial neuron, the back-propagation procedure forms the product
+  > between each of the two error terms and their corresponding synapse values
+  > for that particular medial neuron. It adds the two products together and
+  > then, pretending that this was the output of the medial neuron in question,
+  > computes the corresponding error-improving input by using the derivative of
+  > the sigmoidal function, in this case, 1 - y^2"
+
+  But there are so many things wrong with this:
+
+  1. For one, it's in the middle of the section on some other dude's algorithm
+     (or is that the algorithm we're supposed to be writing? see previous point).
+  2. How am I supposed to get the error terms?
+  3. Why does the derivative of the sigmoidal function lead to error reduction?
+  4. This made it sound like there are multiple sigmoidal functions being used,
+     so I had to go calculate the value several different ways, and then test
+     it to see if it was the same (it is, apparently, code is below). But
+     still, how much time was lost b/c I got confused about this, and then had
+     to go calculate / research it before I realized they were the same?
+
+     ```ruby
+     E = Math::E
+
+     def compute(x)
+       [ Math.cosh(x) ** -2,
+         (4 * E**(2*x)) / (E**(4*x) + 2*E**(2*x) + 1),
+         1 - Math.tanh(x)**2
+       ]
+     end
+
+     def same?(a, b)
+       (a - b).abs < 0.0000001
+     end
+
+     [ *1000.times.map { rand },
+       *1000.times.map { rand*10 - 5 },
+     ].each do |x|
+       sech_x_sq, annoying_fraction, one_minus_y_sq = compute x
+
+       next if same?(sech_x_sq, annoying_fraction) && same?(sech_x_sq, one_minus_y_sq)
+       puts "x:                                      #{x}"
+       puts "sech_x_sq:                              #{sech_x_sq}"
+       puts "annoying_fraction:                      #{annoying_fraction} #{}"
+       puts "one_minus_y_sq:                         #{one_minus_y_sq}"
+       puts "diff sech_x_sq,      annoying_fraction: #{(sech_x_sq      - annoying_fraction).abs}"
+       puts "diff sech_x_sq,      one_minus_y_sq:    #{(sech_x_sq      - one_minus_y_sq).abs}"
+       puts "diff one_minus_y_sq, annoying_fraction: #{(one_minus_y_sq - annoying_fraction).abs}"
+       break
+     end
+     ```
