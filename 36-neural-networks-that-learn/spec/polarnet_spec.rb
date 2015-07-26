@@ -112,7 +112,45 @@ RSpec.describe Polarnet do
     end
   end
 
-  # outputs   = Polarnet.convert inputs, weights
+  describe 'convert' do
+    it 'runs the inputs through the neural net, applying the weights as they go' do
+      seen = []
+
+      # sigmoidal function that records the synapse values it sees, and leaves them unchanged
+      sigmoidal = lambda do |n|
+        seen << n
+        n
+      end
+
+      inputs  = [0.5]
+      weights = [
+        [ [-1, 0, 1] ],   # weights for inputs to neurongs [0, *]
+        [ [10, 20, 30], # weights for neuron [0, 0] to ouputs
+          [40, 50, 60], # weights for neuron [0, 1] to ouputs
+          [70, 80, 90], # weights for neuron [0, 2] to ouputs
+        ],
+      ]
+      inner_neurons1 = [-0.5, 0, 0.5]
+      outputs = [ (-0.5*10 + 0*40 + 0.5*70),
+                  (-0.5*20 + 0*50 + 0.5*80),
+                  (-0.5*30 + 0*60 + 0.5*90),
+                ]
+
+      outputs = Polarnet.convert inputs, weights, &sigmoidal
+      expect(seen).to eq [*inner_neurons1, *outputs]
+      expect(outputs).to eq outputs
+    end
+
+    it 'uses the value of the sigmoidal function as the neuron\'s actual value' do
+      weights = [
+        [[1, 1, 1], [1, 1, 1]],   # 2 inputs to 3 internal
+        [[1, 1], [1, 1], [1, 1]], # 3 internal to 2 outputs
+      ]
+      outputs = Polarnet.convert([-1, 1], weights) { |value| 0.99 }
+      expect(outputs).to eq [0.99, 0.99]
+    end
+  end
+
   # post_data = Polarnet.train weights, data, save_frequency.to_i
   # errors    = Polarnet.errors_for angle, outputs
 end

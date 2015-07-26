@@ -34,6 +34,19 @@ module Polarnet
     ]
   end
 
+  def convert(neurons, weights, &sigmoidal)
+    weights.each do |weights|
+      neurons = weights.transpose.map do |recipient_weights|
+        sigmoidal.call \
+          neurons
+            .zip(recipient_weights)
+            .reduce(0) { |sum, (neuron, weight)| sum + neuron*weight }
+      end
+    end
+
+    neurons
+  end
+
 end
 
 __END__
