@@ -16,7 +16,15 @@ module Polarnet
   end
 
   def generate_training_data(size)
-    size.times.map { (2*rand) - 1 }
+    size.times.map do
+      inputs  = [2 * rand - 1]
+      radians = from_inputs(inputs)
+      [ inputs, [Math.cos(radians), Math.sin(radians)] ]
+    end
+  end
+
+  def from_inputs(inputs)
+    (inputs.first + 1) * Math::PI
   end
 
   def to_inputs(radians)

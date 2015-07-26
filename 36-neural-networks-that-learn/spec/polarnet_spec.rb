@@ -41,18 +41,25 @@ RSpec.describe Polarnet do
 
 
   describe '.generate_training_data' do
-    it 'randomly generates the requested number of inputs, each input a number between -1 and 1' do
+    it 'randomly generates the requested number of inputs, each input a number between -1 and 1, and desired outputs' do
       data = Polarnet.generate_training_data 1000
       expect(data.length).to eq 1000
-      expect(data).to be_all { |n| n  <= 1 }
-      expect(data).to be_all { |n| -1 <= n }
-      expect(data).to be_any { |n| n < -0.5 }
-      expect(data).to be_any { |n| 0.5 < n  }
-      expect(data.uniq.length).to be > 1
+      all_inputs, _ = data.transpose.map(&:flatten)
+      expect(all_inputs.length).to eq 1000
+      expect(all_inputs.uniq.length).to be > 1
+      expect(all_inputs).to be_any { |n| n < -0.5 }
+      expect(all_inputs).to be_any { |n| 0.5 < n  }
+
+      data.each do |inputs, desired_outputs|
+        expect(inputs.first).to be <= 1
+        expect(inputs.first).to be > -1
+        angle = Polarnet.from_inputs(inputs)
+        expect(desired_outputs).to eq Polarnet.to_cartesian(1, angle)
+      end
     end
   end
 
-  describe '.to_inputs' do
+  describe 'to/from inputs' do
     it 'mods the angle so that it is within -pi to pi' do
       expected = Polarnet.to_inputs 0
       expect(Polarnet.to_inputs -2 * pi).to eq expected
@@ -60,12 +67,16 @@ RSpec.describe Polarnet do
       expect(Polarnet.to_inputs  2 * pi).to eq expected
     end
 
+    def to_from!(radians, inputs)
+      expect(Polarnet.to_inputs radians).to eq inputs
+      expect(Polarnet.from_inputs inputs).to eq radians
+    end
+
     it 'translates 0 to be -1, 2pi to 1, and other values linearlly therein' do
-      expect(Polarnet.to_inputs 0.0 * pi).to eq [-1.0]
-      expect(Polarnet.to_inputs 0.5 * pi).to eq [-0.5]
-      expect(Polarnet.to_inputs 1.0 * pi).to eq [ 0.0]
-      expect(Polarnet.to_inputs 1.5 * pi).to eq [ 0.5]
-      expect(Polarnet.to_inputs(1.9 * pi).first).to be > 0.8
+      to_from! 0.0*pi, [-1.0]
+      to_from! 0.5*pi, [-0.5]
+      to_from! 1.0*pi, [ 0.0]
+      to_from! 1.5*pi, [ 0.5]
     end
   end
 

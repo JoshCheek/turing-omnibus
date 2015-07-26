@@ -82,7 +82,9 @@ def self.weights_to_json(weight_iterations)
 end
 
 def self.training_data_to_json(training_data)
-  elements = training_data.map { |n| '% 2.20f' % n }.join("\n, ")
+  float  = lambda { |f| '% 2.20f' % f }
+  floats = lambda { |a| "[#{a.map(&float).join(", ")}]" }
+  elements = training_data.map { |ins, outs| "[#{floats[ins]}, #{floats[outs]}]" }.join("\n, ")
   "[ #{elements}\n]\n"
 end
 
