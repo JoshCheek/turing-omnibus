@@ -1,3 +1,23 @@
+module Polarnet
+  extend self
+
+  def generate_weights(neuron_counts, &generator)
+    weights = neuron_counts.each_cons(2).with_index.map do |(from_count, to_count), offset|
+      from_count.times.map do |from_index|
+        to_count.times.map do |to_index|
+          generator.call offset, from_index, to_index
+        end
+      end
+    end
+
+    iteration = {final: weights, sub_iterations: []}
+
+    [iteration]
+  end
+
+end
+
+__END__
 # -----  synaptic weights  ------
 
 num_inputs  = 2

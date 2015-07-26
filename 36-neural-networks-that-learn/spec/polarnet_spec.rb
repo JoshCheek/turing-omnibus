@@ -21,18 +21,18 @@ RSpec.describe Polarnet do
     specify 'the final weights are a mapping of input neurons to the output neurons, the value coming from the block' do
       expect(weights[0][:final]).to eq [
         # 1 to 2
-        [ [[0+0+0, 0+0+1]],
+        [ [0+0+0, 0+0+1],
 
         # 2 to 3
         ], [
-          [[1+0+0, 1+0+1, 1+0+2]],
-          [[1+1+0, 1+1+1, 1+1+2]],
+          [1+0+0, 1+0+1, 1+0+2],
+          [1+1+0, 1+1+1, 1+1+2],
 
         # 3 to 3
         ], [
-          [[2+0+0, 2+0+1, 2+0+2]],
-          [[2+1+0, 2+1+1, 2+1+2]],
-          [[2+2+0, 2+2+1, 2+2+2]],
+          [2+0+0, 2+0+1, 2+0+2],
+          [2+1+0, 2+1+1, 2+1+2],
+          [2+2+0, 2+2+1, 2+2+2],
         ],
       ]
     end
