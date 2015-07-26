@@ -43,17 +43,20 @@ module Polarnet
     ]
   end
 
-  def convert(neurons, weights, &sigmoidal)
-    weights.each do |weights|
-      neurons = weights.map do |recipient_weights|
-        sigmoidal.call \
-          neurons
-            .zip(recipient_weights)
-            .reduce(0) { |sum, (neuron, weight)| sum + neuron*weight }
-      end
-    end
+  def convert(inputs, weight_layers, &activate)
+    activate_neurons(inputs, weight_layers, &activate).last.map(&:last)
+  end
 
-    neurons
+  def activate_neurons(inputs, weight_layers, &activate)
+    weight_layers.inject [inputs.map { |i| [i, i] }] do |activated, weights|
+      activated << weights.map { |weights_by_input|
+        weighted_sum = activated.last
+                                .map { |sum, sigmoided| sigmoided }
+                                .zip(weights_by_input)
+                                .reduce(0) { |sum, (neuron, weight)| sum + neuron*weight }
+        [weighted_sum, activate.call(weighted_sum)]
+      }
+    end
   end
 
 end
