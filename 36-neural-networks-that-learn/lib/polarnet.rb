@@ -22,7 +22,10 @@ rate = 0.1
 
 
 # -----  convert  -----
-inputs = [12.0, 5.0]
+inputs = [
+  1,    # radius is always 1, b/c we're on the unit circle
+  0.395 # the angle
+]
 
 neurons = Array.new num_neurons do |neuron_index|
   weighted_sum = inputs.each_with_index.inject 0 do |sum, (input, input_index)|

@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift '../lib', __dir__
+require 'polarnet'
+require 'json'
+
+def self.assert!(explanation, expected, operator, actual)
+  return if expected.__send__ operator, actual
+  $stderr.puts explanation
+  $stderr.puts
+  $stderr.puts "ARGV: #{argv.inspect}"
+  $stderr.puts
+  $stderr.puts "Assertion:"
+  separator = (operator.start_with?(/\W/) ? ' ' : '.')
+  $stderr.puts "#{expected.inspect}#{separator}#{operator} #{actual}"
+  exit 1
+end
+
+def self.no_more_args!(args)
+  assert! "Should not be any arguments after the filename!", [], :==, args
+end
+
+def self.to_integer!(name, value)
+  assert! "#{name} should be an integer, not #{value.inspect}", value.to_i.to_s, :==, value
+  value.to_i
+end
+
+def self.assert_file!(name, filename)
+  assert! "Could not find #{name} (pwd: #{File.expand_path Dir.pwd})",
+          File, :exist?, training_filename
+end
+
+help_screen = <<-HELP_SCREEN
+$ ruby #{__FILE__} command
+
+  A program to train a neural network to convert polar coordinates to cartesian coordinates
+
+Commands:
+
+  help
+    This screen
+
+  generate weights $WEIGHTSFILE
+    Randomly generate a set of weights and save them to $WEIGHTSFILE
+
+  generate training $DATAFILE $QUANTITY
+    Randomly generate $QUANTITY (int) sets of training data and save them in $DATAFILE
+
+  train $DATAFILE $WEIGHTSFILE $SAVE_FREQ
+    Train the set of weights in $WEIGHTSFILE against the training data in $DATAFILE
+    The result will be saved back into $DATAFILE, as the next iteration of values (so we can see how they evolved)
+    We will also record the results of the sub iteration every $SAVE_FREQ (int) times
+
+  convert $RADIUS $ANGLE $WEIGHTSFILE [$ITERATION] [$SUBITERATION]
+    Use the weights in $WEIGHTSFILE to convert the given $RADIUS (float) and $ANGLE (radians as a float).
+    If no $ITERATION (int) is specified, the specific set of weights used will default to the final result from the last iteration
+    If no $SUBITERATION is specific, we will use the final results from the specified $ITERATION
+    Otherwise, we will use the results from $ITERATION, at the specific $SUBITERATION
+HELP_SCREEN
+
+command, *args = ARGV
+assert! help_screen, ['generate', 'train', 'convert'], :include?, command
+
+case command
+when '-h', '--help', 'help'
+  puts help_screen
+  exit 0
+
+when 'generate'
+  type, *args = args
+  assert! 'Generate expects either "weights" or "training" as the next arg', ['weights', 'training'], :include?, type
+
+  if type == 'weights'
+    weights_filename, *rest = ARGV[2..-1]
+    no_more_args! rest
+    weights = Polarnet::Generate.weights([15, 15], 0.1)
+    File.write weights_filename, JSON.dump(weights)
+  elsif type == 'training'
+    training_filename, quantity, *rest = args
+    no_more_args! rest
+    quantity = to_integer! 'Quantity', quantity
+    data     = Polarnet::Generate.training_data quantity
+    File.write training_filename, JSON.dump(data)
+  end
+
+when 'train'
+  training_filename, weights_filename, save_frequency, *rest = args
+  no_more_args! rest
+  save_frequency = to_integer! 'Save frequency', (save_frequency||'0')
+  assert! "Save frequency should be an integer, not #{save_frequency.inspect}", save_frequency.to_i.to_s, :==, save_frequency
+  assert_file! '$DATAFILE', training_filename
+  assert_file! '$WEIGHTSFILE', weights_filename
+
+  data            = JSON.load File.read training_filename
+  initial_weights = JSON.load File.read weights_filename
+  post_data       = Polarnet.train weights, data, save_frequency.to_i
+
+  File.write weights_filename, JSON.dump(post_data)
+
+when 'convert'
+  radius, angle, weights_filename, iteration, subiteration, *rest = args
+
+  no_more_args! rest
+  radius    = to_float!   '$RADIUS',       radius
+  angle     = to_float!   '$ANGLE',        angle
+  iteration = to_integer! '$ITERATION',    (iteration||'-1')
+  to_integer!             '$SUBITERATION', (subiteration||'0')
+  assert_file!            '$WEIGHTSFILE',  weights_filename
+
+  all_weights       = JSON.load File.read weights_filename
+  iteration_weights = all_weights[iteration]
+  assert! "There is no iteration #{iteration}, max value: #{all_weights.length}", true, :==, !!iteration_weights
+
+  if subiteration
+    subiteration         = subiteration.to_i
+    subiteration_weights = iteration_weights[:sub_iterations]
+    weights              = subiteration_weights[subiteration]
+    assert! "There is no subiteration #{subiteration}, max value: #{iteration_weights.length}", true, :==, !!weights
+  else
+    weights = iteration_weights[:final]
+  end
+
+  inputs   = Polarnet.to_inputs radius, angle
+  outputs  = Polarnet.convert inputs, weights
+  errors   = Polarnet.errors_for angle, outputs
+  actual   = Polarnet.interpret_outputs radius, outputs
+  expected = Polarnet.to_cartesian radius, angle
+
+  puts "Weights: #{weights.inspect}"
+  puts "Inputs:  #{inputs.inspect}"
+  puts "Outputs: #{outputs.inspect}"
+  puts "Errors:  #{errors.inspect}"
+  puts "Expected (#{expected.join ', '})"
+  puts "Actual   (#{actual.join ', '})"
+end
