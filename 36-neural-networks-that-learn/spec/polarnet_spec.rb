@@ -61,11 +61,11 @@ RSpec.describe Polarnet do
     end
 
     it 'translates 0 to be -1, 2pi to 1, and other values linearlly therein' do
-      expect(Polarnet.to_inputs 0.0 * pi).to eq -1.0
-      expect(Polarnet.to_inputs 0.5 * pi).to eq -0.5
-      expect(Polarnet.to_inputs 1.0 * pi).to eq  0.0
-      expect(Polarnet.to_inputs 1.5 * pi).to eq  0.5
-      expect(Polarnet.to_inputs 1.9 * pi).to be > 0.8
+      expect(Polarnet.to_inputs 0.0 * pi).to eq [-1.0]
+      expect(Polarnet.to_inputs 0.5 * pi).to eq [-0.5]
+      expect(Polarnet.to_inputs 1.0 * pi).to eq [ 0.0]
+      expect(Polarnet.to_inputs 1.5 * pi).to eq [ 0.5]
+      expect(Polarnet.to_inputs(1.9 * pi).first).to be > 0.8
     end
   end
 

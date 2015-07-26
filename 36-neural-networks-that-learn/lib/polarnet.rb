@@ -21,7 +21,8 @@ module Polarnet
 
   def to_inputs(radians)
     congruent_radians = radians % (2*Math::PI)
-    congruent_radians / Math::PI - 1
+    input = congruent_radians / Math::PI - 1
+    [input]
   end
 
   def interpret_outputs(radius, (x, y))
