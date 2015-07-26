@@ -80,7 +80,7 @@ RSpec.describe Polarnet do
     it 'multiplies the outputs by the radius' do
       interprets! radius: 2,  outputs: [1  , 1],    x:  2,  y:  2
       interprets! radius: 2,  outputs: [-1 , -1],   x: -2,  y: -2
-      interprets! radius: 10, outputs: [1  , -1],   x: -10, y: -10
+      interprets! radius: 10, outputs: [1  , -1],   x: 10,  y: -10
       interprets! radius: 4,  outputs: [0.5, 0.25], x: 2,   y: 1
     end
   end

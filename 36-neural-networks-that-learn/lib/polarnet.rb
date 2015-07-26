@@ -24,6 +24,10 @@ module Polarnet
     congruent_radians / Math::PI - 1
   end
 
+  def interpret_outputs(radius, (x, y))
+    [x*radius, y*radius]
+  end
+
 end
 
 __END__
