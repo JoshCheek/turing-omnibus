@@ -3,8 +3,8 @@ module Polarnet
 
   def generate_weights(neuron_counts, &generator)
     weights = neuron_counts.each_cons(2).with_index.map do |(from_count, to_count), offset|
-      from_count.times.map do |from_index|
-        to_count.times.map do |to_index|
+      to_count.times.map do |to_index|
+        from_count.times.map do |from_index|
           generator.call offset, from_index, to_index
         end
       end
@@ -36,7 +36,7 @@ module Polarnet
 
   def convert(neurons, weights, &sigmoidal)
     weights.each do |weights|
-      neurons = weights.transpose.map do |recipient_weights|
+      neurons = weights.map do |recipient_weights|
         sigmoidal.call \
           neurons
             .zip(recipient_weights)

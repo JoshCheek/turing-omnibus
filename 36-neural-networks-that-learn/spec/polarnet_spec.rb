@@ -18,21 +18,22 @@ RSpec.describe Polarnet do
       expect(weights[0][:sub_iterations]).to eq []
     end
 
-    specify 'the final weights are a mapping of input neurons to the output neurons, the value coming from the block' do
+    specify 'the final weights are grouped by the output neuron, based on the input neurons' do
       expect(weights[0][:final]).to eq [
-        # 1 to 2
-        [ [0+0+0, 0+0+1],
+        # 2 from 1
+        [ [0+0+0], [0+0+1],
 
-        # 2 to 3
+        # 3 from 2
         ], [
-          [1+0+0, 1+0+1, 1+0+2],
-          [1+1+0, 1+1+1, 1+1+2],
+          [1+0+0, 1+1+0],
+          [1+0+1, 1+1+1],
+          [1+0+2, 1+1+2],
 
-        # 3 to 3
+        # 3 from 3
         ], [
-          [2+0+0, 2+0+1, 2+0+2],
-          [2+1+0, 2+1+1, 2+1+2],
-          [2+2+0, 2+2+1, 2+2+2],
+          [2+0+0, 2+1+0, 2+2+0],
+          [2+0+1, 2+1+1, 2+2+1],
+          [2+0+2, 2+1+2, 2+2+2],
         ],
       ]
     end
@@ -124,10 +125,10 @@ RSpec.describe Polarnet do
 
       inputs  = [0.5]
       weights = [
-        [ [-1, 0, 1] ],   # weights for inputs to neurongs [0, *]
-        [ [10, 20, 30], # weights for neuron [0, 0] to ouputs
-          [40, 50, 60], # weights for neuron [0, 1] to ouputs
-          [70, 80, 90], # weights for neuron [0, 2] to ouputs
+        [ [-1], [0], [1] ], # weights for neruons, from inputs
+        [ [10, 40, 70], # weights for outputs, from inputs
+          [20, 50, 80],
+          [30, 60, 90],
         ],
       ]
       inner_neurons1 = [-0.5, 0, 0.5]
@@ -143,8 +144,8 @@ RSpec.describe Polarnet do
 
     it 'uses the value of the sigmoidal function as the neuron\'s actual value' do
       weights = [
-        [[1, 1, 1], [1, 1, 1]],   # 2 inputs to 3 internal
-        [[1, 1], [1, 1], [1, 1]], # 3 internal to 2 outputs
+        [[1, 1], [1, 1], [1, 1]], # 3 neurons from 2 inputs
+        [[1, 1, 1], [1, 1, 1]],   # 2 outputs from 3 neurons
       ]
       outputs = Polarnet.convert([-1, 1], weights) { |value| 0.99 }
       expect(outputs).to eq [0.99, 0.99]
