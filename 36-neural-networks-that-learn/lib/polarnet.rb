@@ -19,6 +19,11 @@ module Polarnet
     size.times.map { (2*rand) - 1 }
   end
 
+  def to_inputs(radians)
+    congruent_radians = radians % (2*Math::PI)
+    congruent_radians / Math::PI - 1
+  end
+
 end
 
 __END__

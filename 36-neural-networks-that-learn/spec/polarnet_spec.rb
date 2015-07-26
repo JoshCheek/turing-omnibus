@@ -64,7 +64,7 @@ RSpec.describe Polarnet do
       expect(Polarnet.to_inputs 0.5 * pi).to eq -0.5
       expect(Polarnet.to_inputs 1.0 * pi).to eq  0.0
       expect(Polarnet.to_inputs 1.5 * pi).to eq  0.5
-      expect(Polarnet.to_inputs 1.9 * pi).to be > 0.9
+      expect(Polarnet.to_inputs 1.9 * pi).to be > 0.8
     end
   end
 
