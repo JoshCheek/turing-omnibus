@@ -32,6 +32,33 @@ This is done by training it using a method called "back propagation",
 which walks backwards through the neural network,
 adjusting weights according to the amount of error on the previous layer.
 
+*sigh* after reading a less than mediocre
+[blog](https://takinginitiative.wordpress.com/2008/04/03/basic-neural-network-tutorial-theory/)
+for three hours, as well as the [code](http://dl.dropbox.com/u/18209754/Blog/nnImplementation.zip)
+that went with it, I think I finally figured out how to do this shit:
+
+```
+update each incoming weight:
+  each weight's new value is:
+    the current weight + (the learning rate * in-neuron's value * out-neuron's error gradient)
+
+errorGradient of a neuron:
+  if an output neuron:
+    derivative of sigmoidal function * (currentNodesDesiredValue - currentNodesActualValue)
+  otherwise:
+    derivative of sigmoidal function * the sum of (
+      each outgoing weight multiplied by it's out-neuron's error gradient
+    )
+```
+
+It's a derivative because the derivative gives an equation for the slope of the function.
+Somehow this deals with "finding the steepest slope"
+or else changing the weights nonlinearly or something, idk.
+
+Apparently you can also add a "bias" node, which has a constant value of `-1`
+for some unprovided reason. The nice thing about it, though, is that it allows
+a set of nodes to be affected independently of the inputs.
+
 
 Problem: POLARNET
 -----------------
@@ -153,6 +180,29 @@ At this point, I suspect I will fail to get it working :( Fuck.
   b/c the angle is the only thing that matters (or is there some way we're supposed to deal
   with the radius, which can be infinitely large?), and the psuedocode on 247 doesn't ever
   have `1 to 3`, so what the fuck?
+* The back propagation algorithm is given as:
+
+  > ```
+  > [...]
+
+  > for i <- 1 to n / derive the sigmoidal signal
+  >   sigma(i) <- 0
+  >   for j <- 1 to 2
+  >     sigma(i) <- sigma(i) + error(j) * syntwo(i,j)
+  >   sigmoid(i) <- 1 - (medin(i))^2
+
+  > for i <- 1 to 2 /adjust the first synaptic layer
+  >   for j <- 1 to n
+  >     delta <- rate * sigmoid(j) * sigma(j) * input(i)
+  >     synone(1,j) <- synone(i,j) + delta
+  > ```
+
+  1. They have never said what the "sigmoidal signal" is.
+  2. There is clearly a bug in `synone(1,j)`,
+     both sets of weight calculations are modifying the first weight.
+  3. They have never said how to calculate error.
+  4. When they set sigmoid, they use `i`, but when they get it back out, they use `j`,
+     Which means I keep having to context switch the implications of these meaningless fucking letters.
 * They never actually explain how to calculate the error.
   I swear I've read this chapter 10x now, it's not in there.
   I think it's supposed to be:
