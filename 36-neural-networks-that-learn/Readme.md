@@ -120,7 +120,12 @@ Thoughts
 These are mostly critical, so I'll start with appreciation:
 I've tried to understand neural networks several times,
 and never walked away feeling like I understood it well enough to implement it.
-Well, here I succeeded at implementing it!
+
+Well, here I succeeded at implementing it! <-- I wrote that 12 hours ago,
+in anticipation of success, but now I'm at the point of looking up
+[the reference books](http://web.stanford.edu/group/pdplab/pdphandbook/handbook.pdf)
+to try and find real code that actually does this shit.
+At this point, I suspect I will fail to get it working :( Fuck.
 
 * It was confusing how they used an example partway through that was different from the one
   they were describing. Not saying they need to take it out, but it would have been nice if it were better delimited.
