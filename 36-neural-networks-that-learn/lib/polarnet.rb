@@ -59,13 +59,17 @@ module Polarnet
     end
   end
 
-  def train_all(weight_history:, training_data:, save_frequency:, activation:, activation_slope:)
+  def train_all(weight_history:, training_data:, save_frequency:, on_save:, activation:, activation_slope:)
     saved   = []
     weights = weight_history[-1][:final]
 
     training_data.each_with_index do |(inputs, desired_outputs), index|
-      weights = train_once weights, inputs, desired_outputs, activation, activation_slope
-      saved << weights if index % save_frequency == 0
+      weights, gradients, activations = train_once weights, inputs, desired_outputs, activation, activation_slope
+
+      if index % save_frequency == 0
+        saved << weights
+        on_save.call index, weights, gradients, activations
+      end
     end
 
     [*weight_history, {final: weights, sub_iterations: saved}]
@@ -97,7 +101,7 @@ module Polarnet
       sets << gradient_set
     }.reverse
 
-    weight_layers.map.with_index do |weight_layer, layer_index|
+    new_weights = weight_layers.map.with_index do |weight_layer, layer_index|
       neurons   = activation_data[layer_index].map { |weighted, activated| activated }
       gradients = gradient_sets[layer_index.next]
 
@@ -107,6 +111,8 @@ module Polarnet
         end
       end
     end
+
+    [new_weights, gradient_sets, activation_data]
   end
 end
 
