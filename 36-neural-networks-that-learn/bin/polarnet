@@ -38,6 +38,54 @@ def self.assert_file!(name, filename)
           File, :exist?, filename
 end
 
+# *sigh*
+def self.weights_to_json(weight_iterations)
+  jsonify_synapse = lambda do |synapse, margin|
+    elements = synapse.map { |weights|
+      "[#{weights.map { |weight| '%0.20f' % weight }.join(', ')}]"
+    }.join("\n#{margin}, ")
+    "[ #{elements}\n#{margin}]"
+  end
+
+  jsonify_synapses = lambda do |synapses, margin, do_break_first|
+    elements = synapses.map { |synapse| jsonify_synapse.call synapse, "#{margin}  " }
+                       .join("\n#{margin}, ")
+
+    maybe_break = "\n#{margin}  " if do_break_first
+    "[ #{maybe_break}#{elements}\n#{margin}]"
+  end
+
+  jsonify_iteration = lambda do |iteration, margin|
+    final_json     = jsonify_synapses.call iteration[:final], "#{margin}  ", true
+    sub_iterations = iteration[:sub_iterations]
+                       .map { |synapses| jsonify_synapses.call synapses, "#{margin}    ", false }
+                       .join("\n#{margin}  , ")
+
+    json = %'{ "final": #{final_json},\n'
+    if sub_iterations.empty?
+      json << %'#{margin}  "sub_iterations": []\n'
+    else
+      json << %'#{margin}  "sub_iterations": [\n'
+      json << %'#{margin}    #{sub_iterations}\n'
+      json << %'#{margin}  ]\n'
+    end
+    json << %'#{margin}}'
+  end
+
+  jsonify_iterations = lambda do |iterations, margin|
+    elements = iterations.map { |iteration| jsonify_iteration.call iteration, "#{margin}  " }
+                         .join("\n#{margin}, ")
+    "[ #{elements}\n#{margin}]"
+  end
+
+  jsonify_iterations[weight_iterations, ''] << "\n"
+end
+
+def self.training_data_to_json(training_data)
+  require "pry"
+  binding.pry
+end
+
 help_screen = <<-HELP_SCREEN
 $ ruby #{__FILE__} command
 
@@ -83,8 +131,8 @@ when 'generate'
   if type == 'weights'
     weights_filename, *rest = ARGV[2..-1]
     no_more_args! rest
-    weights = Polarnet::Generate.weights([15, 15], 0.1)
-    File.write weights_filename, JSON.dump(weights)
+    weights = Polarnet.generate_weights([1, 15, 15, 2]) { rand * 0.1 }
+    File.write weights_filename, weights_to_json(weights)
   elsif type == 'training'
     training_filename, quantity, *rest = args
     no_more_args! rest
