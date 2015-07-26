@@ -99,8 +99,10 @@ Commands:
   help
     This screen
 
-  generate weights $WEIGHTSFILE
-    Randomly generate a set of weights and save them to $WEIGHTSFILE
+  generate weights $WEIGHTSFILE $NODE_COUNTS
+    Randomly generate a set of weights for the given $NODE_COUNTS,
+    and save them to $WEIGHTSFILE.
+    $NODE_COUNTS should be integers separated by commas. eg: 4,2,2,5
 
   generate training $DATAFILE $QUANTITY
     Randomly generate $QUANTITY (int) sets of training data and save them in $DATAFILE
@@ -132,8 +134,10 @@ when 'generate'
   assert! 'Generate expects either "weights" or "training" as the next arg', ['weights', 'training'], :include?, type
 
   if type == 'weights'
-    weights_filename, *rest = ARGV[2..-1]
+    weights_filename, node_counts, *rest = ARGV[2..-1]
     no_more_args! rest
+    assert! "$NODE_COUNTS expects a value like 3,2,5,49", node_counts, :kind_of?, String
+    counts = node_counts.to_s.split(',').map.with_index { |count, i| to_integer! "$NODE_COUNTS[#{i}]", count }
     weights = Polarnet.generate_weights([1, 30, 30, 2]) { rand * 0.1 }
     File.write weights_filename, weights_to_json(weights)
   elsif type == 'training'
@@ -194,16 +198,18 @@ when 'convert'
     weights = iteration_weights[:final]
   end
 
-  inputs   = Polarnet.to_inputs angle
-  outputs  = Polarnet.convert inputs, weights, &Math.method(:tanh)
-  errors   = Polarnet.errors_for angle, outputs
-  actual   = Polarnet.interpret_outputs radius, outputs
-  expected = Polarnet.to_cartesian radius, angle
+  inputs     = Polarnet.to_inputs angle
+  outputs    = Polarnet.convert inputs, weights, &Math.method(:tanh)
+  actual     = Polarnet.interpret_outputs radius, outputs
+  expected   = Polarnet.to_cartesian radius, angle
+  errors     = Polarnet.to_cartesian(1, angle).zip(outputs).map { |m, nn| m - nn }
+  mean_error = errors.inject(0, :+) / errors.length
 
-  puts "Weights: #{weights.inspect}"
-  puts "Inputs:  #{inputs.inspect}"
-  puts "Outputs: #{outputs.inspect}"
-  puts "Errors:  #{errors.inspect}"
-  puts "Expected (#{expected.join ', '})"
-  puts "Actual   (#{actual.join ', '})"
+  puts "Weights:    #{weights.inspect}"
+  puts "Inputs:     #{inputs.inspect}"
+  puts "Outputs:    #{outputs.inspect}"
+  puts "Expected    (#{expected.join ', '})"
+  puts "Actual      (#{actual.join ', '})"
+  puts "Errors:     #{errors.inspect}"
+  puts "Mean Error: #{mean_error}"
 end
