@@ -78,12 +78,12 @@ def self.weights_to_json(weight_iterations)
     "[ #{elements}\n#{margin}]"
   end
 
-  jsonify_iterations[weight_iterations, ''] << "\n"
+  jsonify_iterations.call(weight_iterations, '') << "\n"
 end
 
 def self.training_data_to_json(training_data)
-  require "pry"
-  binding.pry
+  elements = training_data.map { |n| '% 2.20f' % n }.join("\n, ")
+  "[ #{elements}\n]\n"
 end
 
 help_screen = <<-HELP_SCREEN
@@ -138,8 +138,8 @@ when 'generate'
     no_more_args! rest
     assert! "No $DATAFILE given!", training_filename, :kind_of?, String
     quantity = to_integer! 'Quantity', quantity
-    data     = Polarnet::Generate.training_data quantity
-    File.write training_filename, JSON.dump(data)
+    data     = Polarnet.generate_training_data quantity
+    File.write training_filename, training_data_to_json(data)
   end
 
 when 'train'
