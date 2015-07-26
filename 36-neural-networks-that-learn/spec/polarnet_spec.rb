@@ -42,10 +42,12 @@ RSpec.describe Polarnet do
   describe '.generate_training_data' do
     it 'randomly generates the requested number of inputs, each input a number between -1 and 1' do
       data = Polarnet.generate_training_data 1000
-      expect(data.length).to eq 1000         # quantity
-      expect(data).to be_all { |n| n  <= 1 } # domain
-      expect(data).to be_all { |n| -1 <= n } # domain
-      expect(data.uniq.length).to be > 1     # random
+      expect(data.length).to eq 1000
+      expect(data).to be_all { |n| n  <= 1 }
+      expect(data).to be_all { |n| -1 <= n }
+      expect(data).to be_any { |n| n < -0.5 }
+      expect(data).to be_any { |n| 0.5 < n  }
+      expect(data.uniq.length).to be > 1
     end
   end
 
