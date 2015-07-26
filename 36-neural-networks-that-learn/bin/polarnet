@@ -1,18 +1,17 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift '../lib', __dir__
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 require 'polarnet'
 require 'json'
 
 def self.assert!(explanation, expected, operator, actual)
   return if expected.__send__ operator, actual
+  $stderr.puts "\e[31m" if $stderr.tty?
   $stderr.puts explanation
+  $stderr.puts "\e[39m" if $stderr.tty?
   $stderr.puts
-  $stderr.puts "ARGV: #{argv.inspect}"
-  $stderr.puts
-  $stderr.puts "Assertion:"
-  separator = (operator.start_with?(/\W/) ? ' ' : '.')
-  $stderr.puts "#{expected.inspect}#{separator}#{operator} #{actual}"
+  $stderr.puts "ARGV:      #{ARGV.inspect}"
+  $stderr.puts "Assertion: #{expected.inspect}#{operator =~ /^\W/ ? ' ' : '.'}#{operator} #{actual.inspect}"
   exit 1
 end
 
@@ -25,9 +24,18 @@ def self.to_integer!(name, value)
   value.to_i
 end
 
+def self.to_float!(name, value)
+  Float value
+rescue ArgumentError
+  assert! "#{name} should be a float, not #{value.inspect}", value.to_f.to_s, :==, value
+rescue TypeError
+  assert! "#{name} was not provided", value, :!=, nil
+end
+
 def self.assert_file!(name, filename)
+  assert! "No #{name} provided!", true, :==, !!filename
   assert! "Could not find #{name} (pwd: #{File.expand_path Dir.pwd})",
-          File, :exist?, training_filename
+          File, :exist?, filename
 end
 
 help_screen = <<-HELP_SCREEN
@@ -59,13 +67,15 @@ Commands:
 HELP_SCREEN
 
 command, *args = ARGV
-assert! help_screen, ['generate', 'train', 'convert'], :include?, command
 
-case command
-when '-h', '--help', 'help'
+if ['-h', '--help', 'help', nil].include? command
   puts help_screen
   exit 0
+end
 
+assert! "#{command.inspect} is not a supported command", ['help', 'generate', 'train', 'convert'], :include?, command
+
+case command
 when 'generate'
   type, *args = args
   assert! 'Generate expects either "weights" or "training" as the next arg', ['weights', 'training'], :include?, type
@@ -78,6 +88,7 @@ when 'generate'
   elsif type == 'training'
     training_filename, quantity, *rest = args
     no_more_args! rest
+    assert! "No $DATAFILE given!", training_filename, :kind_of?, String
     quantity = to_integer! 'Quantity', quantity
     data     = Polarnet::Generate.training_data quantity
     File.write training_filename, JSON.dump(data)
@@ -87,9 +98,9 @@ when 'train'
   training_filename, weights_filename, save_frequency, *rest = args
   no_more_args! rest
   save_frequency = to_integer! 'Save frequency', (save_frequency||'0')
-  assert! "Save frequency should be an integer, not #{save_frequency.inspect}", save_frequency.to_i.to_s, :==, save_frequency
   assert_file! '$DATAFILE', training_filename
   assert_file! '$WEIGHTSFILE', weights_filename
+  assert! "$SAVE_FREQ should be an integer, not #{save_frequency.inspect}", save_frequency.to_i.to_s, :==, save_frequency
 
   data            = JSON.load File.read training_filename
   initial_weights = JSON.load File.read weights_filename
