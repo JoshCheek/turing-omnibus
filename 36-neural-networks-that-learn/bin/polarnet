@@ -134,7 +134,7 @@ when 'generate'
   if type == 'weights'
     weights_filename, *rest = ARGV[2..-1]
     no_more_args! rest
-    weights = Polarnet.generate_weights([1, 15, 15, 2]) { rand * 0.1 }
+    weights = Polarnet.generate_weights([1, 30, 30, 2]) { rand * 0.1 }
     File.write weights_filename, weights_to_json(weights)
   elsif type == 'training'
     training_filename, quantity, *rest = args
@@ -156,11 +156,17 @@ when 'train'
     weight_history:   JSON.parse(File.read(weights_filename),  symbolize_names: true),
     training_data:    JSON.parse(File.read(training_filename), symbolize_names: true),
     activation:       Math.method(:tanh),
-    activation_slope: lambda { |x, y| 1 - y*y },
+    activation_slope: lambda { |x| 1 - x*x },
     save_frequency:   save_frequency.to_i,
-    on_save:          lambda { |index, weights, gradients, activations|
-      *, output_gradients = gradients
-      puts "#{index}: #{output_gradients.inspect}"
+    on_save:          lambda { |index, inputs, desired_outputs, old_weights,
+                                new_weights, gradients, activations, errors|
+      err_for = lambda { |errs| '%0.3f' % (errs.inject(0, :+) / errs.length).abs }
+      old_err = err_for.call Polarnet.convert(inputs, old_weights, &Math.method(:tanh)).zip(desired_outputs).map { |o, d| d - o }
+      new_err = err_for.call Polarnet.convert(inputs, new_weights, &Math.method(:tanh)).zip(desired_outputs).map { |o, d| d - o }
+      open, close = "\e[31m", "\e[39m" if old_err < new_err
+      puts "#{'%-10i'%index}: old: #{open}#{old_err}#{close}, new: #{open}#{new_err}#{close}"
+      # require "pry"
+      # binding.pry
     }
 
   File.write weights_filename, weights_to_json(new_weights)

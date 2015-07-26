@@ -64,26 +64,38 @@ module Polarnet
     weights = weight_history[-1][:final]
 
     training_data.each_with_index do |(inputs, desired_outputs), index|
-      weights, gradients, activations = train_once weights, inputs, desired_outputs, activation, activation_slope
+      will_save = (index % save_frequency == 0)
+      new_weights, gradients, activations, errors =
+        train_once(weights, inputs, desired_outputs, activation, activation_slope, will_save)
 
-      if index % save_frequency == 0
-        saved << weights
-        on_save.call index, weights, gradients, activations
+      if will_save
+        saved << new_weights
+        on_save.call index,
+                     inputs,
+                     desired_outputs,
+                     weights,
+                     new_weights,
+                     gradients,
+                     activations,
+                     errors
       end
     end
 
     [*weight_history, {final: weights, sub_iterations: saved}]
   end
 
-  def train_once(weight_layers, inputs, desired_outputs, activation, activation_slope)
-    learning_rate   = 0.1
+  def train_once(weight_layers, inputs, desired_outputs, activation, activation_slope, will_save)
+    learning_rate   = 0.05
     activation_data = activate_neurons inputs, weight_layers, &activation
 
     (output_activations, _), *dependent_activations_and_indexes =
       activation_data.flat_map.with_index.to_a.reverse
 
+    errors = []
     gradient_set = output_activations.zip(desired_outputs).map { |(weighted, activated), desired|
-      activation_slope.call(weighted, activated) * (desired - activated)
+      error = desired - activated
+      errors << error
+      activation_slope.call(weighted) * error
     }
 
     gradient_sets = dependent_activations_and_indexes.inject([gradient_set]) { |sets, (activation_layer, layer_index)|
@@ -94,7 +106,7 @@ module Polarnet
                                         }
 
       gradient_set = activation_layer.map.with_index do |(weighted, activated), in_index|
-        activation_slope.call(weighted, activated) *
+        activation_slope.call(weighted) *
           weighted_gradients_per_output.inject(0) { |sum, gradients| sum + gradients[in_index] }
       end
 
@@ -102,7 +114,7 @@ module Polarnet
     }.reverse
 
     new_weights = weight_layers.map.with_index do |weight_layer, layer_index|
-      neurons   = activation_data[layer_index].map { |weighted, activated| activated }
+      neurons   = activation_data[layer_index].map { |weighted, activated| weighted }
       gradients = gradient_sets[layer_index.next]
 
       weight_layer.map.with_index do |weights_for_output, out_neuron|
@@ -112,60 +124,6 @@ module Polarnet
       end
     end
 
-    [new_weights, gradient_sets, activation_data]
+    [new_weights, gradient_sets, activation_data, errors]
   end
 end
-
-__END__
-# -----  synaptic weights  ------
-
-num_inputs  = 2
-num_neurons = 2
-num_outputs = 2
-
-# weights from input layer to medial layer
-synone = Array.new num_inputs do
-  Array.new(num_neurons) { 0.1 * rand }
-end
-
-# weights from medial layer to ouptut layer
-syntwo = Array.new num_neurons do
-  Array.new(num_outputs) { 0.1 * rand }
-end
-
-
-# -----  learning rate  -----
-
-# how much to adjust weights while training (lower reduces the amount of adjustment)
-rate = 0.1
-
-
-# -----  convert  -----
-inputs = [
-  1,    # radius is always 1, b/c we're on the unit circle
-  0.395 # the angle
-]
-
-neurons = Array.new num_neurons do |neuron_index|
-  weighted_sum = inputs.each_with_index.inject 0 do |sum, (input, input_index)|
-    sum + (input * synone[input_index][neuron_index])
-  end
-
-  # http://ruby-doc.org/core-2.2.2/Math.html#method-c-tanh
-  # a number between 0 and 1 (technically it's units are radians)
-  Math.tanh weighted_sum
-end
-
-outputs = Array.new num_outputs do |output_index|
-  weighted_sum = neurons.each_with_index.inject 0 do |sum, (input, neuron_index)|
-    sum + (input * synone[neuron_index][output_index])
-  end
-
-  # http://ruby-doc.org/core-2.2.2/Math.html#method-c-tanh
-  # a number between 0 and 1 (technically it's units are radians)
-  Math.tanh weighted_sum
-end
-
-p inputs
-p neurons
-p outputs
