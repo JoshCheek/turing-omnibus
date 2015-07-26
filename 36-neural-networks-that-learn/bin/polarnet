@@ -148,13 +148,12 @@ when 'train'
   save_frequency = to_integer! 'Save frequency', (save_frequency||'0')
   assert_file! '$DATAFILE', training_filename
   assert_file! '$WEIGHTSFILE', weights_filename
-  assert! "$SAVE_FREQ should be an integer, not #{save_frequency.inspect}", save_frequency.to_i.to_s, :==, save_frequency
 
-  data            = JSON.load File.read training_filename
-  initial_weights = JSON.load File.read weights_filename
+  data            = JSON.parse File.read(training_filename), symbolize_names: true
+  initial_weights = JSON.parse File.read(weights_filename),  symbolize_names: true
   post_data       = Polarnet.train weights, data, save_frequency.to_i
 
-  File.write weights_filename, JSON.dump(post_data)
+  File.write weights_filename, weights_to_json(post_data)
 
 when 'convert'
   radius, angle, weights_filename, iteration, subiteration, *rest = args
@@ -166,7 +165,7 @@ when 'convert'
   to_integer!             '$SUBITERATION', (subiteration||'0')
   assert_file!            '$WEIGHTSFILE',  weights_filename
 
-  all_weights       = JSON.load File.read weights_filename
+  all_weights       = JSON.parse File.read(weights_filename), symbolize_names: true
   iteration_weights = all_weights[iteration]
   assert! "There is no iteration #{iteration}, max value: #{all_weights.length}", true, :==, !!iteration_weights
 
@@ -179,8 +178,8 @@ when 'convert'
     weights = iteration_weights[:final]
   end
 
-  inputs   = Polarnet.to_inputs radius, angle
-  outputs  = Polarnet.convert inputs, weights
+  inputs   = Polarnet.to_inputs angle
+  outputs  = Polarnet.convert inputs, weights, &Math.method(:tanh)
   errors   = Polarnet.errors_for angle, outputs
   actual   = Polarnet.interpret_outputs radius, outputs
   expected = Polarnet.to_cartesian radius, angle
