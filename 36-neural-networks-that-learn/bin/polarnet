@@ -51,8 +51,9 @@ def self.weights_to_json(weight_iterations)
     elements = synapses.map { |synapse| jsonify_synapse.call synapse, "#{margin}  " }
                        .join("\n#{margin}, ")
 
-    maybe_break = "\n#{margin}  " if do_break_first
-    "[ #{maybe_break}#{elements}\n#{margin}]"
+    open_ary = "[ "
+    open_ary = "[\n#{margin}  " if do_break_first
+    "#{open_ary}#{elements}\n#{margin}]"
   end
 
   jsonify_iteration = lambda do |iteration, margin|
@@ -151,11 +152,14 @@ when 'train'
   assert_file! '$DATAFILE', training_filename
   assert_file! '$WEIGHTSFILE', weights_filename
 
-  data            = JSON.parse File.read(training_filename), symbolize_names: true
-  initial_weights = JSON.parse File.read(weights_filename),  symbolize_names: true
-  post_data       = Polarnet.train weights, data, save_frequency.to_i
+  new_weights = Polarnet.train_all \
+    weight_history:   JSON.parse(File.read(weights_filename),  symbolize_names: true),
+    training_data:    JSON.parse(File.read(training_filename), symbolize_names: true),
+    save_frequency:   save_frequency.to_i,
+    activation:       Math.method(:tanh),
+    activation_slope: lambda { |x, y| 1 - y*y }
 
-  File.write weights_filename, weights_to_json(post_data)
+  File.write weights_filename, weights_to_json(new_weights)
 
 when 'convert'
   radius, angle, weights_filename, iteration, subiteration, *rest = args

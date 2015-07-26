@@ -59,6 +59,55 @@ module Polarnet
     end
   end
 
+  def train_all(weight_history:, training_data:, save_frequency:, activation:, activation_slope:)
+    saved   = []
+    weights = weight_history[-1][:final]
+
+    training_data.each_with_index do |(inputs, desired_outputs), index|
+      weights = train_once weights, inputs, desired_outputs, activation, activation_slope
+      saved << weights if index % save_frequency == 0
+    end
+
+    [*weight_history, {final: weights, sub_iterations: saved}]
+  end
+
+  def train_once(weight_layers, inputs, desired_outputs, activation, activation_slope)
+    learning_rate   = 0.1
+    activation_data = activate_neurons inputs, weight_layers, &activation
+
+    (output_activations, _), *dependent_activations_and_indexes =
+      activation_data.flat_map.with_index.to_a.reverse
+
+    gradient_set = output_activations.zip(desired_outputs).map { |(weighted, activated), desired|
+      activation_slope.call(weighted, activated) * (desired - activated)
+    }
+
+    gradient_sets = dependent_activations_and_indexes.inject([gradient_set]) { |sets, (activation_layer, layer_index)|
+      weighted_gradients_per_output = weight_layers[layer_index]
+                                        .zip(gradient_set)
+                                        .map { |weights, gradient|
+                                          weights.map { |weight| weight * gradient }
+                                        }
+
+      gradient_set = activation_layer.map.with_index do |(weighted, activated), in_index|
+        activation_slope.call(weighted, activated) *
+          weighted_gradients_per_output.inject(0) { |sum, gradients| sum + gradients[in_index] }
+      end
+
+      sets << gradient_set
+    }.reverse
+
+    weight_layers.map.with_index do |weight_layer, layer_index|
+      neurons   = activation_data[layer_index].map { |weighted, activated| activated }
+      gradients = gradient_sets[layer_index.next]
+
+      weight_layer.map.with_index do |weights_for_output, out_neuron|
+        weights_for_output.map.with_index do |weight, in_neuron|
+          weight + learning_rate * neurons[in_neuron] * gradients[out_neuron]
+        end
+      end
+    end
+  end
 end
 
 __END__
